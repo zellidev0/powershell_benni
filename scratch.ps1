@@ -13,14 +13,57 @@ function isProject {
     param (
         $DIR
     )
-    $DIR -match '\d\d-0\d\d\d\d[a-zA-Z]'
+    $DIR -match '.*\d\d-0\d\d\d\d[a-zA-Z].*'
 }
 
 function isKda {
     param (
         $DIR
     )
-    $DIR -match '\d\d-0\d\d\d\d[a-zA-Z]'
+    $DIR -match '.*\d\d-\d\d\d\d\d[a-zA-Z].*'
+}
+
+function moveNestedFoldersToTop {
+    param (
+        $SOURCE_PATH
+    )
+    Get-ChildItem $SOURCE_PATH |
+            Foreach-Object {
+                $IS_DIR = Test-Path -Path $_.FullName -PathType Container
+                $IS_FILE = Test-Path -Path $_.FullName -PathType Leaf
+                if ($IS_DIR) {
+                    moveNestedFoldersToTop($_.FullName)
+                } else {
+                    "Current File is " + $_.Name
+                    $DEST = $KDA_PATH + "/" + $_.Name
+                    if (Test-Path $DEST) {
+                        Move-Item $_.FullName -dest ($DEST + "/" + $_.Name)
+
+                        # remove the now empty folder where we moved all child elements
+                        Remove-Item $DEST -Force
+                    } else {
+                        Move-Item $_.FullName -dest $DEST
+                    }
+                }
+
+                $path = $_.FullName
+                $IS_DIR = ((Get-Item $_.FullName) -is [System.IO.DirectoryInfo])
+                if (isKda($path) -And $IS_DIR) {
+                    "Found folder "+ $path
+                    $DEST = $KDA_PATH + "/" + $_.Name
+                    if (Test-Path $DEST) {
+                        $CHILD_FILES = Get-ChildItem $_.FullName
+                        # do for all child elements
+                        $CHILD_FILES | Foreach-Object {
+                            Move-Item $_.FullName -dest ($DEST + "/" + $_.Name)
+                        }
+                        # remove the now empty folder where we moved all child elements
+                        Remove-Item $DEST -Force
+                    } else {
+                        Move-Item $_.FullName -dest $DEST
+                    }
+                }
+            }
 }
 
 
@@ -61,16 +104,28 @@ function doForEveryFolder {
                         Remove-Item ($SOURCE_PATH + "/" + $_.Name) -Force -Recurse
                         #The folder does not exist in kda
                     } else {
-                        $DEST = $KDA_PATH + "/" + $_.Name
-                        Move-Item $_.FullName $DEST
+                        Write-Host "FOUND KDA"
+                        $RESULT = $_.Name -match '\d\d-\d\d\d\d\d'
+                        if ($RESULT) {
+                            Rename-Item -Path ($SOURCE_PATH + "/" + $_.Name) -NewName $Matches[0]
+                            Write-Host "HELLOE"
+                            Write-Host $Matches[0]
+                            Move-Item ($SOURCE_PATH + "/" + $Matches[0]) ($KDA_PATH + "/" + $Matches[0])
+                        }
                     }
-
                     #else the file matches none
                 } else {
-                    "matches not"
+                    "matches not" + $_.Name
                 }
             }
 
 }
 
-doForEveryFolder
+#doForEveryFolder
+moveNestedFoldersToTop($SOURCE_PATH)
+#$XXX = "BHXJS22-22222HYVTG" -replace '[^(\d{2}-\d\d\d\d\d)]' , ''
+#$XXX = Select-String -Pattern "\d{2}-\d\d\d\d\d" -InputObject "BHXJS22-22222HYVTG"
+#
+#
+#The quick and dirty:
+
