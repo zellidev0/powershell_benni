@@ -13,57 +13,94 @@ function isProject {
     param (
         $DIR
     )
-    $DIR -match '.*\d\d-0\d\d\d\d[a-zA-Z].*'
+    $DIR -match '.*\d\d-0\d\d\d\d[^0-9]?.*'
 }
 
 function isKda {
     param (
         $DIR
     )
-    $DIR -match '.*\d\d-\d\d\d\d\d[a-zA-Z].*'
+    $DIR -match '.*\d\d-\d\d\d\d\d[^0-9]?.*'
 }
 
 function moveNestedFoldersToTop {
     param (
         $SOURCE_PATH
     )
-    Get-ChildItem $SOURCE_PATH |
+    Get-ChildItem $SOURCE_PATH  -recurse |
             Foreach-Object {
-                $IS_DIR = Test-Path -Path $_.FullName -PathType Container
+#               Write-Host $_.FullName
+#               $IS_DIR = Test-Path -Path $_.Parent -PathType Container
                 $IS_FILE = Test-Path -Path $_.FullName -PathType Leaf
-                if ($IS_DIR) {
-                    moveNestedFoldersToTop($_.FullName)
-                } else {
-                    "Current File is " + $_.Name
-                    $DEST = $KDA_PATH + "/" + $_.Name
-                    if (Test-Path $DEST) {
-                        Move-Item $_.FullName -dest ($DEST + "/" + $_.Name)
+                if ($IS_FILE) {
+                    Write-Host $_.FullName "is File"
+                    $PARENT_PATH = (get-item $_.FullName).Directory
+                    Write-Host "Parent is" $PARENT_PATH.Name
+                    $XXX = isKda($PARENT_PATH.Name)
+                    Write-Host "IS KDA" $XXX
 
-                        # remove the now empty folder where we moved all child elements
-                        Remove-Item $DEST -Force
-                    } else {
-                        Move-Item $_.FullName -dest $DEST
-                    }
-                }
+                    if (isProject($PARENT_PATH.Name)) {
+                        $EXISTS_PROJECT_FOLDER = $PROJECT_PATH + "/" + $PARENT_PATH.Name
+                        if (Test-Path $EXISTS_PROJECT_FOLDER) {
 
-                $path = $_.FullName
-                $IS_DIR = ((Get-Item $_.FullName) -is [System.IO.DirectoryInfo])
-                if (isKda($path) -And $IS_DIR) {
-                    "Found folder "+ $path
-                    $DEST = $KDA_PATH + "/" + $_.Name
-                    if (Test-Path $DEST) {
-                        $CHILD_FILES = Get-ChildItem $_.FullName
-                        # do for all child elements
-                        $CHILD_FILES | Foreach-Object {
-                            Move-Item $_.FullName -dest ($DEST + "/" + $_.Name)
+                        } else {
+                            Write-Host "Create" $PROJECT_PATH "/" $PARENT_PATH.Name
+                            New-Item -ItemType Directory -Force -Path ($PROJECT_PATH + "/" + $PARENT_PATH.Name) | Out-Null
                         }
-                        # remove the now empty folder where we moved all child elements
-                        Remove-Item $DEST -Force
+                        $DEST = $PROJECT_PATH + "/" + $PARENT_PATH.Name
+
+                        $num = 1
+                        $nextname = ($DEST + "/" + $_.Name)
+                        while(Test-Path $nextname) {
+                            $nextName = Join-Path ($DEST + "/") ($_.BaseName + "_$num" + $_.Extension)
+                            $num+=1
+                        }
+                        Move-Item $_.FullName -dest $nextname
+                    }
+                    elseif (isKda($PARENT_PATH.Name)) {
+                       $EXISTS_KDA_FOLDER = $KDA_PATH + "/" + $PARENT_PATH.Name
+                    if (Test-Path $EXISTS_KDA_FOLDER) {
+                        Write-Host "Path" EXISTS_KDA_FOLDER " exists"
                     } else {
-                        Move-Item $_.FullName -dest $DEST
+                        Write-Host "Create" $KDA_PATH "/" $PARENT_PATH.Name
+                        New-Item -ItemType Directory -Force -Path ($KDA_PATH + "/" + $PARENT_PATH.Name) | Out-Null
+                    }
+                    $DEST = $KDA_PATH + "/" + $PARENT_PATH.Name
+
+                    $num = 1
+                    $nextname = ($DEST + "/" + $_.Name)
+                    while(Test-Path $nextname) {
+                        $nextName = Join-Path ($DEST + "/") ($_.BaseName + "_$num" + $_.Extension)
+                        $num+=1
+                    }
+                        Move-Item $_.FullName -dest $nextname
                     }
                 }
             }
+}
+
+# A script block (anonymous function) that will remove empty folders
+# under a root folder, using tail-recursion to ensure that it only
+# walks the folder tree once. -Force is used to be able to process
+# hidden files/folders as well.
+function removeEmptyFolders {
+    param(
+        $Path
+    )
+    Get-ChildItem $CURR_LOCATION -recurse |
+            Foreach-Object {
+                if ((Get-ChildItem $_.FullName | Measure-Object).Count -eq 0) {
+                    Write-Host "Will remove" $_.FullName
+                    Remove-Item $_.FullName -Force -Recurse
+                }
+            }
+}
+
+function careBoutFoldersWithoutNumer {
+    param(
+        $Path
+    )
+
 }
 
 
@@ -121,11 +158,8 @@ function doForEveryFolder {
 
 }
 
-#doForEveryFolder
 moveNestedFoldersToTop($SOURCE_PATH)
-#$XXX = "BHXJS22-22222HYVTG" -replace '[^(\d{2}-\d\d\d\d\d)]' , ''
-#$XXX = Select-String -Pattern "\d{2}-\d\d\d\d\d" -InputObject "BHXJS22-22222HYVTG"
-#
-#
-#The quick and dirty:
-
+1..10 | % {
+    removeEmptyFolders($SOURCE_PATH)
+}
+careBoutFoldersWithoutNumer($SOURCE_PATH)
