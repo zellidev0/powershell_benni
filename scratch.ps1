@@ -118,19 +118,24 @@ function truncateFileNames {
     )
     Get-ChildItem $SOURCE_PATH_TRUNCATE -Recurse |
             Foreach-Object {
-                $NEW_TRUNCATED_NAME = $_.BaseName -replace ("(?<=(.{45})).+","")
-                $NEW_TRUNCATED_NAME_WITH_EXTENSION = $NEW_TRUNCATED_NAME + $_.Extension
+                if (Test-Path -Path $_.FullName -PathType Leaf) {
+                    $PARENT_PATH = (get-item $_.FullName).Directory
 
-                $num1 = 1
-                $nextname1 = ($SOURCE_PATH_TRUNCATE + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION)
-                while((Test-Path $nextname1)) {
-                    $nextName1 = Join-Path ($SOURCE_PATH_TRUNCATE + "/") ($NEW_TRUNCATED_NAME + "_$num1" + $_.Extension)
-                    $num1+=1
-                }
-                if ($NEW_TRUNCATED_NAME_WITH_EXTENSION -eq $_.Name) {
-                    Move-Item -Path ($SOURCE_PATH_TRUNCATE + "/" + $_.Name) ($SOURCE_PATH_TRUNCATE + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION)
-                } else {
-                    Move-Item ($SOURCE_PATH_TRUNCATE + "/" + $_.Name) -dest $nextname1
+                    $NEW_TRUNCATED_NAME = $_.BaseName -replace ("(?<=(.{45})).+","")
+                    $NEW_TRUNCATED_NAME_WITH_EXTENSION = $NEW_TRUNCATED_NAME + $_.Extension
+
+                    $DEST = $SOURCE_PATH_TRUNCATE + "/" + $PARENT_PATH.Name
+                    $num1 = 1
+                    $nextname1 = ($DEST + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION)
+                    while((Test-Path $nextname1)) {
+                        $nextName1 = Join-Path ($DEST + "/") ($NEW_TRUNCATED_NAME + "_$num1" + $_.Extension)
+                        $num1+=1
+                    }
+                    if ($NEW_TRUNCATED_NAME_WITH_EXTENSION -eq $_.Name) {
+                        Move-Item -Path ($DEST + "/" + $_.Name) ($DEST + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION)
+                    } else {
+                        Move-Item ($DEST + "/" + $_.Name) -dest $nextname1
+                    }
                 }
             }
 }
@@ -199,4 +204,4 @@ function doForEveryFolder {
 #careBoutFoldersWithoutNumer($SOURCE_PATH)
 #renameAllToNumerOnly($KDA_PATH)
 #renameAllToNumerOnly($PROJECT_PATH)
-truncateFileNames("/Users/julian/IdeaProjects/powershell/test")
+truncateFileNames("/Users/julian/IdeaProjects/powershell/project/")
