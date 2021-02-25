@@ -87,7 +87,7 @@ function removeEmptyFolders {
     param(
         $Path
     )
-    Get-ChildItem $CURR_LOCATION -recurse |
+    Get-ChildItem $Path -recurse |
             Foreach-Object {
                 if ((Get-ChildItem $_.FullName | Measure-Object).Count -eq 0) {
                     Write-Host "Will remove" $_.FullName
@@ -104,7 +104,13 @@ function renameAllToNumerOnly {
             Foreach-Object {
                 $RESULT = $_.Name -match '\d\d-\d\d\d\d\d'
                 if ($RESULT) {
-                    Move-Item -Path ($SOURCE_PATH_RENAME + "/" + $_.Name) ($SOURCE_PATH_RENAME + "/" +  $Matches[0])
+                    $FROM = ($SOURCE_PATH_RENAME + "/" + $_.Name)
+                    $TO = ($SOURCE_PATH_RENAME + "/" + $Matches[0])
+                    if ($FROM -eq $TO) {
+
+                    } else {
+                        Move-Item -Path $FROM $TO
+                    }
                 } else {
                     Write-Host not found
                 }
@@ -201,7 +207,7 @@ function doForEveryFolder {
 #1..10 | % {
 #    removeEmptyFolders($SOURCE_PATH)
 #}
-#careBoutFoldersWithoutNumer($SOURCE_PATH)
 #renameAllToNumerOnly($KDA_PATH)
-#renameAllToNumerOnly($PROJECT_PATH)
-truncateFileNames("/Users/julian/IdeaProjects/powershell/project/")
+renameAllToNumerOnly($PROJECT_PATH)
+#truncateFileNames($KDA_PATH)
+#truncateFileNames($PROJECT_PATH)
