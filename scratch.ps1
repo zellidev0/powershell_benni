@@ -96,11 +96,19 @@ function removeEmptyFolders {
             }
 }
 
-function careBoutFoldersWithoutNumer {
+function renameAllToNumerOnly {
     param(
-        $Path
+        $SOURCE_PATH_RENAME
     )
-
+    Get-ChildItem $SOURCE_PATH_RENAME |
+            Foreach-Object {
+                $RESULT = $_.Name -match '\d\d-\d\d\d\d\d'
+                if ($RESULT) {
+                    Move-Item -Path ($SOURCE_PATH_RENAME + "/" + $_.Name) ($SOURCE_PATH_RENAME + "/" +  $Matches[0])
+                } else {
+                    Write-Host not found
+                }
+            }
 }
 
 
@@ -163,3 +171,5 @@ moveNestedFoldersToTop($SOURCE_PATH)
     removeEmptyFolders($SOURCE_PATH)
 }
 careBoutFoldersWithoutNumer($SOURCE_PATH)
+renameAllToNumerOnly($KDA_PATH)
+renameAllToNumerOnly($PROJECT_PATH)
