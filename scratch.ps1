@@ -111,6 +111,32 @@ function renameAllToNumerOnly {
             }
 }
 
+# stopps when the file with a given name already exists
+function truncateFileNames {
+    param(
+        $SOURCE_PATH_TRUNCATE
+    )
+    Get-ChildItem $SOURCE_PATH_TRUNCATE -Recurse |
+            Foreach-Object {
+                $NEW_TRUNCATED_NAME = $_.BaseName -replace ("(?<=(.{45})).+","")
+                $NEW_TRUNCATED_NAME_WITH_EXTENSION = $NEW_TRUNCATED_NAME + $_.Extension
+
+                $num1 = 1
+                $nextname1 = ($SOURCE_PATH_TRUNCATE + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION)
+                while((Test-Path $nextname1)) {
+                    $nextName1 = Join-Path ($SOURCE_PATH_TRUNCATE + "/") ($NEW_TRUNCATED_NAME + "_$num1" + $_.Extension)
+                    $num1+=1
+                }
+                if ($NEW_TRUNCATED_NAME_WITH_EXTENSION -eq $_.Name) {
+                    Move-Item -Path ($SOURCE_PATH_TRUNCATE + "/" + $_.Name) ($SOURCE_PATH_TRUNCATE + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION)
+                } else {
+                    Move-Item ($SOURCE_PATH_TRUNCATE + "/" + $_.Name) -dest $nextname1
+                }
+            }
+}
+
+
+
 
 function doForEveryFolder {
     $CURR_LOCATION = Get-Location
@@ -166,10 +192,11 @@ function doForEveryFolder {
 
 }
 
-moveNestedFoldersToTop($SOURCE_PATH)
-1..10 | % {
-    removeEmptyFolders($SOURCE_PATH)
-}
-careBoutFoldersWithoutNumer($SOURCE_PATH)
-renameAllToNumerOnly($KDA_PATH)
-renameAllToNumerOnly($PROJECT_PATH)
+#moveNestedFoldersToTop($SOURCE_PATH)
+#1..10 | % {
+#    removeEmptyFolders($SOURCE_PATH)
+#}
+#careBoutFoldersWithoutNumer($SOURCE_PATH)
+#renameAllToNumerOnly($KDA_PATH)
+#renameAllToNumerOnly($PROJECT_PATH)
+truncateFileNames("/Users/julian/IdeaProjects/powershell/test")
