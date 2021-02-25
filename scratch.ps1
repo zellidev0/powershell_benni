@@ -203,11 +203,11 @@ function doForEveryFolder {
 
 }
 
-#moveNestedFoldersToTop($SOURCE_PATH)
+moveNestedFoldersToTop($SOURCE_PATH)
 #1..10 | % {
 #    removeEmptyFolders($SOURCE_PATH)
 #}
 #renameAllToNumerOnly($KDA_PATH)
-renameAllToNumerOnly($PROJECT_PATH)
+#renameAllToNumerOnly($PROJECT_PATH)
 #truncateFileNames($KDA_PATH)
 #truncateFileNames($PROJECT_PATH)
