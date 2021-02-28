@@ -117,6 +117,41 @@ function renameAllToNumerOnly {
             }
 }
 
+function removeAllImages {
+    param(
+        $SOURCE_PATH_RENAME
+    )
+    Get-ChildItem $SOURCE_PATH_RENAME -recurse|
+            Foreach-Object {
+                if (($_.Extension -eq ".jpg") -or
+                        ($_.Extension -eq ".JPG") -or
+                        ($_.Extension -eq ".jpeg") -or
+                        ($_.Extension -eq ".JPEG") -or
+                        ($_.Extension -eq ".png") -or
+                        ($_.Extension -eq ".PNG")) {
+                    Remove-Item -Path $_.FullName
+                }
+            }
+}
+
+function removeAllNonImages {
+    param(
+        $SOURCE_PATH_RENAME
+    )
+    Get-ChildItem $SOURCE_PATH_RENAME -recurse|
+            Foreach-Object {
+                if (($_.Extension -eq ".jpg") -or
+                        ($_.Extension -eq ".JPG") -or
+                        ($_.Extension -eq ".jpeg") -or
+                        ($_.Extension -eq ".JPEG") -or
+                        ($_.Extension -eq ".png") -or
+                        ($_.Extension -eq ".PNG")) {
+                } else {
+                    Remove-Item -Path $_.FullName
+                }
+            }
+}
+
 # stopps when the file with a given name already exists
 function truncateFileNames {
     param(
@@ -203,7 +238,7 @@ function doForEveryFolder {
 
 }
 
-moveNestedFoldersToTop($SOURCE_PATH)
+#moveNestedFoldersToTop($SOURCE_PATH)
 #1..10 | % {
 #    removeEmptyFolders($SOURCE_PATH)
 #}
@@ -211,3 +246,7 @@ moveNestedFoldersToTop($SOURCE_PATH)
 #renameAllToNumerOnly($PROJECT_PATH)
 #truncateFileNames($KDA_PATH)
 #truncateFileNames($PROJECT_PATH)
+removeAllImages($KDA_PATH)
+removeAllImages($PROJECT_PATH)
+removeAllNonImages($KDA_PATH)
+removeAllNonImages($PROJECT_PATH)
