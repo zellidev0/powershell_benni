@@ -3,8 +3,10 @@
 $SOURCE_PATH = "/Users/julian/IdeaProjects/powershell/files"
 #Set kda path
 $KDA_PATH = "/Users/julian/IdeaProjects/powershell/kda"
+$KDA_ONE_CHILD_PATH = "/Users/julian/IdeaProjects/powershell/kda_one_child"
 #Set project folder
 $PROJECT_PATH = "/Users/julian/IdeaProjects/powershell/project"
+$PROJECT_ONE_CHILD_PATH = "/Users/julian/IdeaProjects/powershell/project_one_child"
 #Move working directory to source path
 Set-Location -Path $SOURCE_PATH
 #For every file/folder in current path do ...
@@ -154,6 +156,21 @@ function removeAllNonImages {
             }
 }
 
+function moveFolderWithOneChildToSeparate {
+    param(
+        $SOURCE_PATH_RENAME
+    )
+
+    Get-ChildItem $SOURCE_PATH_RENAME |
+            Foreach-Object {
+                $COUNT = (Get-ChildItem $_.FullName | Measure-Object ).Count
+                if ($COUNT -eq 1) {
+                    Write-Host $_.FullName
+                    Move-Item -Path ($_.FullName) ($KDA_ONE_CHILD_PATH + "/" + $_.Name)
+                }
+            }
+}
+
 # stopps when the file with a given name already exists
 function truncateFileNames {
     param(
@@ -252,4 +269,5 @@ function doForEveryFolder {
 #removeAllImages($PROJECT_PATH)
 #removeAllNonImages($KDA_PATH)
 #removeAllNonImages($PROJECT_PATH)
-
+#moveFolderWithOneChildToSeparate($KDA_PATH)
+moveFolderWithOneChildToSeparate($PROJECT_PATH)
