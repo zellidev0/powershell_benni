@@ -140,14 +140,16 @@ function removeAllNonImages {
     )
     Get-ChildItem $SOURCE_PATH_RENAME -recurse|
             Foreach-Object {
-                if (($_.Extension -eq ".jpg") -or
-                        ($_.Extension -eq ".JPG") -or
-                        ($_.Extension -eq ".jpeg") -or
-                        ($_.Extension -eq ".JPEG") -or
-                        ($_.Extension -eq ".png") -or
-                        ($_.Extension -eq ".PNG")) {
-                } else {
-                    Remove-Item -Path $_.FullName
+                if (Test-Path -Path $_.FullName -PathType Leaf) {
+                    if (($_.Extension -eq ".jpg") -or
+                            ($_.Extension -eq ".JPG") -or
+                            ($_.Extension -eq ".jpeg") -or
+                            ($_.Extension -eq ".JPEG") -or
+                            ($_.Extension -eq ".png") -or
+                            ($_.Extension -eq ".PNG")) {
+                    } else {
+                        Remove-Item -Path $_.FullName
+                    }
                 }
             }
 }
@@ -246,7 +248,8 @@ function doForEveryFolder {
 #renameAllToNumerOnly($PROJECT_PATH)
 #truncateFileNames($KDA_PATH)
 #truncateFileNames($PROJECT_PATH)
-removeAllImages($KDA_PATH)
-removeAllImages($PROJECT_PATH)
-removeAllNonImages($KDA_PATH)
-removeAllNonImages($PROJECT_PATH)
+#removeAllImages($KDA_PATH)
+#removeAllImages($PROJECT_PATH)
+#removeAllNonImages($KDA_PATH)
+#removeAllNonImages($PROJECT_PATH)
+
