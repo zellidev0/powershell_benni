@@ -1,15 +1,16 @@
 
-#Set source path
+#Make sure these folders exists
 $SOURCE_PATH = "/Users/julian/IdeaProjects/powershell/files"
-#Set kda path
 $KDA_PATH = "/Users/julian/IdeaProjects/powershell/kda"
 $KDA_ONE_CHILD_PATH = "/Users/julian/IdeaProjects/powershell/kda_one_child"
-#Set project folder
 $PROJECT_PATH = "/Users/julian/IdeaProjects/powershell/project"
 $PROJECT_ONE_CHILD_PATH = "/Users/julian/IdeaProjects/powershell/project_one_child"
-#Move working directory to source path
+#Make sure these files exist
+$LOG_FILE_PATH = "/Users/julian/IdeaProjects/powershell/logfile.txt"
+$RENAMED_LOGS_CSV_PATH = "/Users/julian/IdeaProjects/powershell/log_renaming.csv"
+
+
 Set-Location -Path $SOURCE_PATH
-#For every file/folder in current path do ...
 
 function isProject {
     param (
@@ -35,18 +36,17 @@ function moveNestedFoldersToTop {
 #               $IS_DIR = Test-Path -Path $_.Parent -PathType Container
                 $IS_FILE = Test-Path -Path $_.FullName -PathType Leaf
                 if ($IS_FILE) {
-                    Write-Host $_.FullName "is File"
                     $PARENT_PATH = (get-item $_.FullName).Directory
-                    Write-Host "Parent is" $PARENT_PATH.Name
                     $XXX = isKda($PARENT_PATH.Name)
-                    Write-Host "IS KDA" $XXX
 
                     if (isProject($PARENT_PATH.Name)) {
                         $EXISTS_PROJECT_FOLDER = $PROJECT_PATH + "/" + $PARENT_PATH.Name
                         if (Test-Path $EXISTS_PROJECT_FOLDER) {
 
                         } else {
-                            Write-Host "Create" $PROJECT_PATH "/" $PARENT_PATH.Name
+                            $LogValue = 'Created "' + $PROJECT_PATH + '/' + $PARENT_PATH.Name + '"'
+                            Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                            Write-Host $LogValue
                             New-Item -ItemType Directory -Force -Path ($PROJECT_PATH + "/" + $PARENT_PATH.Name) | Out-Null
                         }
                         $DEST = $PROJECT_PATH + "/" + $PARENT_PATH.Name
@@ -57,14 +57,20 @@ function moveNestedFoldersToTop {
                             $nextName = Join-Path ($DEST + "/") ($_.BaseName + "_$num" + $_.Extension)
                             $num+=1
                         }
+                        $LogValue = 'Moved "' + $_.FullName + '" to "' + $nextname + '"'
+                        Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                        Write-Host $LogValue
+                        New-Item -ItemType Directory -Force -Path ($PROJECT_PATH + "/" + $PARENT_PATH.Name) | Out-Null
                         Move-Item $_.FullName -dest $nextname
                     }
                     elseif (isKda($PARENT_PATH.Name)) {
                        $EXISTS_KDA_FOLDER = $KDA_PATH + "/" + $PARENT_PATH.Name
                     if (Test-Path $EXISTS_KDA_FOLDER) {
-                        Write-Host "Path" EXISTS_KDA_FOLDER " exists"
+
                     } else {
-                        Write-Host "Create" $KDA_PATH "/" $PARENT_PATH.Name
+                        $LogValue = 'Created "' + $KDA_PATH + '/' + $PARENT_PATH.Name + '"'
+                        Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                        Write-Host $LogValue
                         New-Item -ItemType Directory -Force -Path ($KDA_PATH + "/" + $PARENT_PATH.Name) | Out-Null
                     }
                     $DEST = $KDA_PATH + "/" + $PARENT_PATH.Name
@@ -75,6 +81,9 @@ function moveNestedFoldersToTop {
                         $nextName = Join-Path ($DEST + "/") ($_.BaseName + "_$num" + $_.Extension)
                         $num+=1
                     }
+                        $LogValue = 'Moved "' + $_.FullName + '" to "' + $nextname + '"'
+                        Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                        Write-Host $LogValue
                         Move-Item $_.FullName -dest $nextname
                     }
                 }
@@ -92,7 +101,9 @@ function removeEmptyFolders {
     Get-ChildItem $Path -recurse |
             Foreach-Object {
                 if ((Get-ChildItem $_.FullName | Measure-Object).Count -eq 0) {
-                    Write-Host "Will remove" $_.FullName
+                    $LogValue = 'Removed empty folder"' +  $_.FullName + '"'
+                    Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                    Write-Host $LogValue
                     Remove-Item $_.FullName -Force -Recurse
                 }
             }
@@ -111,10 +122,23 @@ function renameAllToNumerOnly {
                     if ($FROM -eq $TO) {
 
                     } else {
-                        Move-Item -Path $FROM $TO
+                        if (Test-Path $TO) {
+                            Move-Item -Path ($FROM + "/*" ) $TO
+                            $LogValue = 'Moved all from "' + $FROM +'" to "' + $TO + '"'
+                            Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                            Write-Host $LogValue
+                            Remove-Item -Path $FROM
+                        } else {
+                            $LogValue = 'Renamed "' + $FROM +'" to "' + $TO + '"'
+                            Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                            $RENAMEVALUELOG = $_.Name + ',' + $Matches[0] + ';'
+                            Add-Content -Path $RENAMED_LOGS_CSV_PATH -Value $RENAMEVALUELOG
+                            Write-Host $LogValue
+                            Move-Item -Path $FROM $TO
+                        }
                     }
                 } else {
-                    Write-Host not found
+                    Write-Host not found $RESULT
                 }
             }
 }
@@ -131,6 +155,9 @@ function removeAllImages {
                         ($_.Extension -eq ".JPEG") -or
                         ($_.Extension -eq ".png") -or
                         ($_.Extension -eq ".PNG")) {
+                    $LogValue = 'Removed "' + $_.FullName + '"'
+                    Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                    Write-Host $LogValue
                     Remove-Item -Path $_.FullName
                 }
             }
@@ -150,6 +177,9 @@ function removeAllNonImages {
                             ($_.Extension -eq ".png") -or
                             ($_.Extension -eq ".PNG")) {
                     } else {
+                        $LogValue = 'Removed "' + $_.FullName + '"'
+                        Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                        Write-Host $LogValue
                         Remove-Item -Path $_.FullName
                     }
                 }
@@ -165,7 +195,9 @@ function moveFolderWithOneChildToSeparate {
             Foreach-Object {
                 $COUNT = (Get-ChildItem $_.FullName | Measure-Object ).Count
                 if ($COUNT -eq 1) {
-                    Write-Host $_.FullName
+                    $LogValue = 'Moved because only one child element "' + $_.FullName + '"'
+                    Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                    Write-Host $LogValue
                     Move-Item -Path ($_.FullName) ($KDA_ONE_CHILD_PATH + "/" + $_.Name)
                 }
             }
@@ -181,20 +213,28 @@ function truncateFileNames {
                 if (Test-Path -Path $_.FullName -PathType Leaf) {
                     $PARENT_PATH = (get-item $_.FullName).Directory
 
-                    $NEW_TRUNCATED_NAME = $_.BaseName -replace ("(?<=(.{45})).+","")
+                    $NEW_TRUNCATED_NAME = $_.BaseName -replace ("(?<=(.{42})).+","")
                     $NEW_TRUNCATED_NAME_WITH_EXTENSION = $NEW_TRUNCATED_NAME + $_.Extension
 
-                    $DEST = $SOURCE_PATH_TRUNCATE + "/" + $PARENT_PATH.Name
+                    $DEST1 = $SOURCE_PATH_TRUNCATE + "/" + $PARENT_PATH.Name
                     $num1 = 1
-                    $nextname1 = ($DEST + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION)
+                    $nextname1 = ($DEST1 + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION)
                     while((Test-Path $nextname1)) {
-                        $nextName1 = Join-Path ($DEST + "/") ($NEW_TRUNCATED_NAME + "_$num1" + $_.Extension)
+                        $nextName1 = Join-Path ($DEST1 + "/") ($NEW_TRUNCATED_NAME + "_$num1" + $_.Extension)
                         $num1+=1
                     }
                     if ($NEW_TRUNCATED_NAME_WITH_EXTENSION -eq $_.Name) {
-                        Move-Item -Path ($DEST + "/" + $_.Name) ($DEST + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION)
+#                        $LogValue = 'Renamed "' + DEST1 + "/" + $_.Name + '" to "' + DEST1 + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION + '"'
+#                        Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+#                        Write-Host $LogValue
+#                        Move-Item -Path (DEST1 + "/" + $_.Name) (DEST1 + "/" + $NEW_TRUNCATED_NAME_WITH_EXTENSION)
                     } else {
-                        Move-Item ($DEST + "/" + $_.Name) -dest $nextname1
+                        $LogValue = 'Renamed "' + $DEST1 + "/" + $_.Name + '" to "' + $nextName1 + '"'
+                        Add-Content -Path $LOG_FILE_PATH -Value $LogValue
+                        Write-Host $LogValue
+                        Write-Host "Want to move "$DEST1 + "/" + $_.Name
+
+                        Move-Item ($DEST1 + "/" + $_.Name) -dest $nextname1
                     }
                 }
             }
@@ -261,8 +301,9 @@ function doForEveryFolder {
 #1..10 | % {
 #    removeEmptyFolders($SOURCE_PATH)
 #}
-#renameAllToNumerOnly($KDA_PATH)
-#renameAllToNumerOnly($PROJECT_PATH)
+#Add-Content -Path $RENAMED_LOGS_CSV_PATH -Value "Old Name,New Name;"
+renameAllToNumerOnly($KDA_PATH)
+renameAllToNumerOnly($PROJECT_PATH)
 #truncateFileNames($KDA_PATH)
 #truncateFileNames($PROJECT_PATH)
 #removeAllImages($KDA_PATH)
@@ -270,4 +311,8 @@ function doForEveryFolder {
 #removeAllNonImages($KDA_PATH)
 #removeAllNonImages($PROJECT_PATH)
 #moveFolderWithOneChildToSeparate($KDA_PATH)
-moveFolderWithOneChildToSeparate($PROJECT_PATH)
+#moveFolderWithOneChildToSeparate($PROJECT_PATH)
+
+#document alter name unmbennen zum neuen name loggen
+#
+#bestand alle bilde so nene und in richtigen odner kopieren
